@@ -1,9 +1,8 @@
 import numpy
 
 class Neuron():
-    def __init__(self, inputs=None, outputs=None):
-        self.inputs = inputs
-        self.outputs = outputs
+    def __init__(self, learning_rate=1e-3):
+        self.learning_rate = learning_rate
         self.weights = None
         self.threshold = None
         self.activation = None
@@ -20,6 +19,12 @@ class Neuron():
         """
         pass
 
+    def _fit(self):
+        pass
+
+    def _adjust_weights(self, deriv):
+        pass
+        
     def _sigmoid(self):
         """
         Sigmoid activation function:
