@@ -13,3 +13,6 @@ class Layer():
         """
         return np.apply_along_axis(lambda x: x._activate(X), -1, self.neurons)
         
+    def _fit(self, X):
+        return np.apply_along_axis(lambda x: x._fit(X))
+        
