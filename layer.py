@@ -1,6 +1,6 @@
 import numpy as np
 
-class Layer():
+class BaseLayer():
     def __init__(self, output_shape=10, input_shape=None, learning_rate=1e-3):
         self.output_shape=output_shape
         self.learning_rate=learning_rate
@@ -42,14 +42,14 @@ class Layer():
         copy_layer.weights = self.weights.copy()
         return copy_layer
         
-class ReLU(Layer):
+class ReLU(BaseLayer):
     def _activate(self, X):
         return np.where(X < 0, 0, X)
 
     def _deriv(self, X):
         return np.where(X < 0, 0, 1)
     
-class Dense(Layer):
+class Dense(BaseLayer):
     def _activate(self, X):
         return X
 
