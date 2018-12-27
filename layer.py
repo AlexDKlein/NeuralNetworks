@@ -8,7 +8,7 @@ class BaseLayer():
         if input_shape is None:
             self.input_shape=None
         else:
-            self.construct(input_shape) 
+            self._construct(input_shape) 
         
     def __getitem__(self, key):
         return self.weights[key]
@@ -16,7 +16,7 @@ class BaseLayer():
     def __call__(self, *args, **kwargs):
         return self.activate(*args, **kwargs)
     
-    def construct(self, dim):
+    def _construct(self, dim):
         self.input_shape=dim
         self.weights=np.random.uniform(-1, 1, (self.input_shape, self.output_shape))
 

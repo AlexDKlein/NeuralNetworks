@@ -29,7 +29,7 @@ class Network():
     def add_layers(self, *layers):
         for layer in layers:
             if len(self) > 0:
-                layer.construct(self[-1].output_shape) 
+                layer._construct(self[-1].output_shape) 
             self.layers.append(layer)
         
     def predict(self, X):
