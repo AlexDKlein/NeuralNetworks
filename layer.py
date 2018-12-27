@@ -41,6 +41,13 @@ class BaseLayer():
                                     learning_rate=self.learning_rate)
         copy_layer.weights = self.weights.copy()
         return copy_layer
+
+    def _activate(self, *args):
+        raise NotImplementedError("BaseLayer._activate must be overwritten.")
+    
+    def _deriv(self, *args):
+        raise NotImplementedError("BaseLayer._deriv must be overwritten.")
+
         
 class ReLU(BaseLayer):
     def _activate(self, X):
