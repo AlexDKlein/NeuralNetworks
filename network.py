@@ -92,7 +92,7 @@ class Network():
         y_dim = len(y.shape)
         if y_dim is 1:
             y = y.reshape(-1, 1)
-        return (1/2 * (self.output(-1, X) - y)**2).sum()
+        return (1/2 * (self.output(-1, X) - y)**2).mean()
     
     def adj_weights(self, X, y):
         for _ in range(self.generations):
@@ -102,7 +102,7 @@ class Network():
                     eta = layer.learning_rate * self._eta(X, y, i)
                     if not np.isfinite(eta).all():
                         raise ValueError
-                    layer.weights[batch] += eta[batch.squeeze()]
+                    layer.weights[batch] += eta[batch]
 
     def fit(self, X, y, v=False, p=False):
         e = []
