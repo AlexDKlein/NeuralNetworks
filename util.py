@@ -33,7 +33,47 @@ def fill_from_axis(a, axis, shape):
     return a
 
 def get_batches(a, batch_size=1, shuffle=True, axis=None):
-        """Generator yielding boolean masks for a along a given axis."""
+        """Generator function yielding boolean masks in the shape of 'a' 
+        along a given axis.
+        Parameters
+        -----------
+        a: ndarray
+            Array on which to model masks.
+        batch_size: float or int
+            int - Number of True values in each mask.
+            float - proportion of True values in each mask.
+        shuffle: bool, default=True
+            True - return batches in random order.
+            False - return batches in row-first ("C") order.
+        axis: int or None, default=None
+            int - axis to iterate over. 
+                  (All booleans sharing
+                   this axis will be True
+                    on the same batches).
+            None - Yield a seperate mask for each index in a.
+        
+        Returns
+        -------
+        Output: generator object 
+
+        Examples
+        --------
+        a = np.array([[1,2], 
+                      [3,4]])
+
+        get_batches(a, batch_size=1, shuffle=False, axis=None)
+        > array([[True,  False], -> array([[False,  True]  -> ...
+                 [False, False]])          [False, False]])
+
+        get_batches(a, batch_size=1, shuffle=False, axis=0)
+        > array([[True,   True], -> array([[False,  False]
+                 [False, False]])         [True,   True]])
+        
+        get_batches(a, batch_size=2, shuffle=True, axis=None)
+        > array([[True, False], -> array([[False, True]
+                 [False, True]])          [True, False]])
+
+        """
 
         if axis == -1:
             axis = len(a.shape) - 1
