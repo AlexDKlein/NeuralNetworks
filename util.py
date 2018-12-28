@@ -3,7 +3,23 @@ import numpy as np
 def fill_from_axis(a, axis, shape):
     """Create an array of shape 'shape' with values from input array a 
     spanning a chosen axis. Selecting axis=None will return an array with shape=(*shape, *a.shape).
+    Parameters
+    -----------
+    a: ndarray 
+        Array to repeat over new axes.
+    axis: int or None
+        int - Orientation of initial values in output array.
+        None - Output array will have shape (*shape, *a.shape). 
+               See example below.
+
+    shape: tuple
+        Desired shape of output array. 
+        Item with index = axis parameter will be ignored.
     
+    Returns
+    ---------
+    output: ndarray of specified shape.
+
     Examples:
     fill_from_axis(np.array([1, 2, 3]), axis=1, shape=(3, ...))
     > array([[1, 2, 3],
