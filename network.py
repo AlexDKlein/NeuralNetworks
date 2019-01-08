@@ -28,6 +28,9 @@ class Network():
             pass
         return self.predict(*args, **kwargs)
     
+    def __repr__(self):
+        return 'Network(' + ', '.join([f'{k}={v}' for k,v in self.parameters.items()]) + ')'
+    
     @property
     def parameters(self):
         return {attr: getattr(self, attr) for attr in 

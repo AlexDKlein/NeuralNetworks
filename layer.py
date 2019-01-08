@@ -17,6 +17,12 @@ class BaseLayer():
         """Alternate call method for activate."""
         return self.activate(*args, **kwargs)
     
+    def __repr__(self):
+        return f'{self.__class__.__name__}(' +\
+            f'output_shape={self.output_shape}, ' +\
+            f'input_shape={self.input_shape}, ' +\
+            f'learning_rate={self.learning_rate})'
+    
     def _construct(self, dim):
         """
         Initialize weights and set input_shape according to supplied 
@@ -132,6 +138,7 @@ class BaseLayer():
         return (X - np.mean(X, axis=0)) / np.std(X, axis=0)
         
 class ReLU(BaseLayer):
+    activation='ReLU'
     def __init__(self, output_shape=10, input_shape=None, learning_rate=1e-3, alpha=0):
         self.alpha = alpha
         self.output_shape=output_shape
