@@ -4,12 +4,14 @@ import matplotlib.pyplot as plt
 import util
 
 class Network():
-    def __init__(self, epochs=10, batch_size=2, generations=10, layers=None, threshold=1e-3):
+    def __init__(self, epochs=10, batch_size=2, generations=10, layers=None, threshold=1e-3, shuffle_batches=True):
         self.layers = []
         self.epochs = epochs
         self.batch_size = batch_size
         self.generations = generations
         self.threshold = threshold
+        self._recent_outputs = None
+        self.shuffle_batches = shuffle_batches
         if layers is not None:
             self.add_layers(*layers)
         
@@ -25,6 +27,11 @@ class Network():
         elif len(args) + len(kwargs) == 3:
             pass
         return self.predict(*args, **kwargs)
+    
+    @property
+    def parameters(self):
+        return {attr: getattr(self, attr) for attr in 
+        ['epochs', 'batch_size', 'generations', 'layers', 'threshold', 'shuffle_batches']}
     
     def add_layers(self, *layers):
         for layer in layers:
@@ -42,7 +49,13 @@ class Network():
         """Return output of layer i given input array X"""
         while i < 0: i += len(self)
         return self[i].activate(X if i == 0 else self.output(i-1, X))
- 
+
+    def staged_output(self, X, start=0):
+        X_ = {start - 1: X}
+        for i, layer in enumerate(self.layers[start:]):
+            X_[start + i] = layer.activate(X_[start + i - 1])
+        return X_
+
     def _deriv(self, i, X):
         return self[i]._deriv(X)
     
@@ -59,7 +72,7 @@ class Network():
         return self[i].weights
     
     def copy(self):
-        network_copy = self.__class__()
+        network_copy = self.__class__(**self.parameters)
         network_copy.layers = [layer.copy() for layer in self]
         return network_copy
     
@@ -70,10 +83,11 @@ class Network():
             change in output = (d(X,-1) @ delta).sum(axis=-1) """
         if i is -1:
             i = len(self) - 1
-        i_input = self.output(i-1, X) if i > 0 else X
+        all_outputs = self.staged_output(X)
+        i_input = all_outputs[i-1] if i > 0 else X
         output = self[i].deriv(i_input)
         for k in range(i-1, j-1, -1):
-            k_input = self.output(k-1, X) if k > 0 else X
+            k_input = all_outputs[k-1] if k > 0 else X
             output = output @ self[k].deriv(k_input)
         return output
             
@@ -98,10 +112,11 @@ class Network():
         for _ in range(self.generations):
             for i, layer in enumerate(self):
                 for batch in util.get_batches(self.weights(i),
-                                         batch_size=self.batch_size):
+                                         batch_size=self.batch_size,
+                                         shuffle=self.shuffle_batches):
                     eta = layer.learning_rate * self._eta(X, y, i)
                     if not np.isfinite(eta).all():
-                        raise ValueError
+                        raise ValueError(f'Non-finite value encountered in layer {i}. Try reducing learning rate.')
                     layer.weights[batch] += eta[batch]
 
     def fit(self, X, y, v=False, p=False):
