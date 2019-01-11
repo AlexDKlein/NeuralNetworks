@@ -37,23 +37,77 @@ class Network():
         ['epochs', 'batch_size', 'generations', 'layers', 'threshold', 'shuffle_batches']}
     
     def add_layers(self, *layers):
+        """Add layer objects to the network.
+        New layers will be appended in order.
+        
+        Parameters
+        ----------
+        *args: layer objects
+            Layers to be added to the network.
+        """
         for layer in layers:
             if len(self) > 0:
                 layer._construct(self[-1].output_shape) 
             self.layers.append(layer)
         
     def predict(self, X):
+        """Predict the output target given input X, for the 
+        current state of the network.
+        Parameters
+        ----------
+        X: np.ndarray
+            Input array with shape (n, m) where m is the input shape of layer 0.
+        
+        Returns
+        -------
+        output: np.ndarray
+            Output array with shape (n,p) where p is the output shape of the final layer.
+
+        """
         return self.output(-1, X)
     
     def activate(self, i, X):
+        """Performs the activation function of layer i on input X.
+        Equivalent to self.layers[i].activate(X).
+        Parameters
+        ---------- 
+        i: int
+            Index of layer from which the activation function is called.
+        X: np.ndarray
+            Input array with shape (n,m) where m is the input shape of layer i.
+
+        Returns
+        ----------
+        output: np.ndarray
+            Output array with shape (n,p) where p is the output shape of layer i.
+        """
         return self[i].activate(X)
         
     def output(self, i, X):
-        """Return output of layer i given input array X"""
+        """Return output of layer i given input array X at layer 0.
+        Parameters
+        ---------- 
+        X: np.ndarray
+            Input array with shape (n,m) where m is the input shape of layer 0.
+        Returns
+        ----------
+        output: np.ndarray
+            Output array with shape (n,p) where p is the output shape of layer i.
+        """
         while i < 0: i += len(self)
         return self[i].activate(X if i == 0 else self.output(i-1, X))
 
     def staged_output(self, X, start=0):
+        """Return a dictionary of layer i given input array X at layer 0.
+        Parameters
+        ---------- 
+        X: np.ndarray
+            Input array with shape (n,m) where m is the input shape of layer 0.
+        Returns
+        ----------
+        output: np.ndarray
+            Output array with shape (n,p) where p is the output shape of layer i.
+        """
         X_ = {start - 1: X}
         for i, layer in enumerate(self.layers[start:]):
             X_[start + i] = layer.activate(X_[start + i - 1])
@@ -66,24 +120,79 @@ class Network():
         return self[i]._activate(X)
     
     def deriv(self, i, X):
+        """Performs the derivative function of layer i on input X.
+        Equivalent to self.layers[i].deriv(X).
+        Parameters
+        ---------- 
+        i: int
+            Layer from which the derivative function is called.
+        X: np.ndarray
+            Input array with shape (n,m) where m is the input shape of layer i.
+
+        Returns
+        ---------
+        output: ndarray
+            Array of shape (n, p, m) where m and p are the input and output shapes of layer i.
+        """
         return self[i].deriv(X)
     
     def wt_deriv(self, i, X):
+        """Performs the weight derivative function of layer i on input X.
+        Equivalent to self.layers[i].wt_deriv(X).
+        Parameters
+        ---------- 
+        i: int
+            Layer from which the weight derivative function is called.
+        X: np.ndarray
+            Input array with shape (n,m) where m is the input shape of layer i.
+
+        Returns
+        ---------
+        output: np.ndarray
+            Array of shape (n, p, m) where m and p are the input and output shapes of layer i.
+        """
         return self[i].wt_deriv(X)
         
     def weights(self, i):
+        """Return the weights of layer i.
+        Equivalent to self[i].weights.
+        Parameters
+        ---------- 
+        i: int
+            Layer whose weights are to be returned.
+        Returns
+        -------
+        output: np.ndarray
+            Weights array from layer i.
+        """
         return self[i].weights
     
     def copy(self):
+        """Return a new network with identical parameters and cloned layers.
+        Returns
+        -------
+        output: Network
+            A copy of the network.
+        """
         network_copy = self.__class__(**self.parameters)
         network_copy.layers = [layer.copy() for layer in self]
         return network_copy
     
     def d(self, X, i, j=0):
-        """Return derivitive of output i with respect to input j.
-        For some change in input, 'delta', the change in output
-        can be calculated as thus:
-            change in output = (d(X,-1) @ delta).sum(axis=-1) """
+        """Return derivative of output from layer i with respect to input at layer j.
+        Parameters
+        ---------- 
+        X: np.ndarray
+            Input array for layer 0
+        i: int
+            Index of output layer
+        j: int
+            Index of input layer
+        
+        Returns
+        -------
+        output: np.ndarray
+        """
         if i is -1:
             i = len(self) - 1
         all_outputs = self.staged_output(X)
@@ -95,7 +204,20 @@ class Network():
         return output
             
     def w(self, X, i, j=0):
-        """Return the derivitive of output i with respect to weights at layer j."""
+        """Return the derivative of output from layer i with respect to weights at layer j.
+        Parameters
+        ---------- 
+        X: np.ndarray
+            Input array for layer 0
+        i: int
+            Index of output layer
+        j: int
+            Index of input layer
+        
+        Returns
+        -------
+        output: np.ndarray
+        """
         if i is -1:
             i = len(self) - 1
         
@@ -106,12 +228,34 @@ class Network():
         return self.d(X, i, j+1) @ self[j].wt_deriv(j_input)
              
     def error(self, X, y):
+        """Return the error for the network's predictions given input X.
+        Currently defaults to 1/2 MSE.
+        Parameters
+        ---------- 
+        X: np.ndarray
+            Input array for layer 0
+        y: np.ndarray
+            Target output array
+        Returns
+        ---------- 
+        output: float
+            Total error in network output.
+        """
         y_dim = len(y.shape)
         if y_dim is 1:
             y = y.reshape(-1, 1)
         return (1/2 * (self.output(-1, X) - y)**2).mean()
     
     def adj_weights(self, X, y):
+        """Adjust the weights of each layer to minimize error.
+        Used in 'fit' method.
+        Parameters
+        ---------- 
+        X: np.ndarray
+            Input array for layer 0
+        y: np.ndarray
+            Target output array
+        """
         for _ in range(self.generations):
             for i, layer in enumerate(self):
                 for batch in util.get_batches(self.weights(i),
@@ -123,6 +267,19 @@ class Network():
                     layer.weights[batch] += eta[batch]
 
     def fit(self, X, y, v=False, p=False):
+        """Adjust the weights of each layer to minimize error.
+        Used in 'fit' method.
+        Parameters
+        ---------- 
+        X: np.ndarray
+            Input array for layer 0
+        y: np.ndarray
+            Target output array
+        Returns
+        ---------
+        output: self
+            The fitted model
+        """
         e = []
         for i in range(self.epochs):
             self.adj_weights(X, y)
@@ -138,6 +295,20 @@ class Network():
         return self
     
     def _eta(self, X, y, i=0):
+        """Calculate the gradient of the error with respect to weights at layer i.
+        Parameters
+        ---------- 
+        X: np.ndarray
+            Input array for layer 0
+        y: np.ndarray
+            Target output array
+        i: int
+            Index of the chosen layer
+        Returns
+        --------
+        output: np.ndarray
+            Gradient of the current network error with respect to weights at layer i
+        """
         err = y - self.output(-1, X)
         if i == len(self) - 1:
             return np.einsum('do, doi -> dio', err, self.w(X, i, i)).sum(axis=0)
