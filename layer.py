@@ -59,7 +59,7 @@ class BaseLayer():
     
     def deriv(self, X):
         """
-        Get the derivitive of `activate` function with respect to input X.
+        Get the derivative of `activate` function with respect to input X.
 
         Parameters
         ----------
@@ -69,7 +69,7 @@ class BaseLayer():
         Returns
         ---------
         output: ndarray of shape (-1, output_shape, input_shape)
-            Derivitive of `activate` function for each input array in X.
+            Derivative of `activate` function for each input array in X.
         """
         X = self.standardize(X)
         weighted_X = np.einsum('di, io -> doi', X, self.weights)
@@ -78,7 +78,7 @@ class BaseLayer():
     
     def wt_deriv(self, X):
         """
-        Get the derivitive of `activate` function with respect to layer weights
+        Get the derivative of `activate` function with respect to layer weights
         for input arrays in X.
         
         Parameters
@@ -89,7 +89,7 @@ class BaseLayer():
         Returns
         ---------
         output: ndarray of shape (-1, output_shape, input_shape)
-            Derivitive of `activate` function wrt layer weights for each input array in X.
+            Derivative of `activate` function wrt layer weights for each input array in X.
         """
         X = self.standardize(X)
         weighted_X = np.einsum('di, io -> doi', X, self.weights)
@@ -125,7 +125,7 @@ class BaseLayer():
         raise NotImplementedError("BaseLayer._activate must be overwritten.")
     
     def _deriv(self, *args):
-        """Underlying derivitive function for layer type. 
+        """Underlying derivative function for layer type. 
         Raises error if not overwritten in subclass.
         
         Raises
