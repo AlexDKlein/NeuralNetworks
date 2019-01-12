@@ -1,2 +1,2 @@
 # NeuralNetworks
-Basic Neural Network model based in numpy.
+Basic Neural Network model using numpy.
