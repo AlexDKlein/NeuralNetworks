@@ -4,11 +4,10 @@ import matplotlib.pyplot as plt
 import util
 
 class Network():
-    def __init__(self, epochs=10, batch_size=2, generations=10, layers=None, threshold=1e-3, shuffle_batches=True):
+    def __init__(self, epochs=10, batch_size=2, layers=None, threshold=1e-3, shuffle_batches=True):
         self.layers = []
         self.epochs = epochs
         self.batch_size = batch_size
-        self.generations = generations
         self.threshold = threshold
         self._recent_outputs = None
         self.shuffle_batches = shuffle_batches
@@ -34,7 +33,7 @@ class Network():
     @property
     def parameters(self):
         return {attr: getattr(self, attr) for attr in 
-        ['epochs', 'batch_size', 'generations', 'layers', 'threshold', 'shuffle_batches']}
+        ['epochs', 'batch_size', 'layers', 'threshold', 'shuffle_batches']}
     
     def add_layers(self, *layers):
         """Add layer objects to the network.
@@ -256,15 +255,15 @@ class Network():
         y: np.ndarray
             Target output array
         """
-        for _ in range(self.generations):
-            for i, layer in enumerate(self):
-                for batch in util.get_batches(self.weights(i),
-                                         batch_size=self.batch_size,
-                                         shuffle=self.shuffle_batches):
-                    eta = layer.learning_rate * self._eta(X, y, i)
-                    if not np.isfinite(eta).all():
-                        raise ValueError(f'Non-finite value encountered in layer {i}. Try reducing learning rate.')
-                    layer.weights[batch] += eta[batch]
+        for i, layer in enumerate(self):
+            for batch in util.get_batches(self.weights(i),
+                                        batch_size=self.batch_size,
+                                        shuffle=self.shuffle_batches):
+                eta = layer.learning_rate * self._eta(X, y, i)
+                eta = np.clip(eta, -1, 1)
+                if not np.isfinite(eta).all():
+                    raise ValueError(f'Non-finite value encountered in layer {i}. Try reducing learning rate.')
+                layer.weights[batch] += eta[batch]
 
     def fit(self, X, y, v=False, p=False):
         """Adjust the weights of each layer to minimize error.
