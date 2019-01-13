@@ -166,6 +166,20 @@ class Network():
         """
         return self[i].weights
     
+    def bias(self, i):
+        """Return the bias of layer i.
+        Equivalent to self[i].bias.
+        Parameters
+        ---------- 
+        i: int
+            Layer whose bias is to be returned.
+        Returns
+        -------
+        output: np.ndarray
+            bias array from layer i.
+        """
+        return self[i].bias
+        
     def copy(self):
         """Return a new network with identical parameters and cloned layers.
         Returns
@@ -225,7 +239,31 @@ class Network():
             return self[j].wt_deriv(j_input)
     
         return self.d(X, i, j+1) @ self[j].wt_deriv(j_input)
-             
+    
+    def b(self, X, i, j=0):
+        """Return the derivative of output from layer i with respect to biases at layer j.
+        Parameters
+        ---------- 
+        X: np.ndarray
+            Input array for layer 0
+        i: int
+            Index of output layer
+        j: int
+            Index of input layer
+        
+        Returns
+        -------
+        output: np.ndarray
+        """
+        if i is -1:
+            i = len(self) - 1
+
+        j_input = self.output(j-1, X) if j > 0 else X
+        if i == j:
+            b = self[j].bias_deriv(j_input)
+            return b[..., None] * np.eye(b.shape[-1])[None, ...]
+        return np.einsum('doi, dii -> doi', self.d(X, i, j+1), self.b(X, j, j))
+
     def error(self, X, y):
         """Return the error for the network's predictions given input X.
         Currently defaults to 1/2 MSE.
@@ -260,12 +298,21 @@ class Network():
                                         batch_size=self.batch_size,
                                         shuffle=self.shuffle_batches):
                 eta = layer.learning_rate * self._eta(X, y, i)
-                eta = np.clip(eta, -1, 1)
+                eta = np.clip(eta, -0.1, 0.1)
                 if not np.isfinite(eta).all():
                     raise ValueError(f'Non-finite value encountered in layer {i}. Try reducing learning rate.')
                 layer.weights[batch] += eta[batch]
 
-    def fit(self, X, y, v=False, p=False):
+    def adj_biases(self, X, y):
+        for i, layer in enumerate(self):
+            for batch in util.get_batches(layer.bias,
+                                        batch_size=self.batch_size,
+                                        shuffle=self.shuffle_batches):
+                beta = layer.learning_rate * self._beta(X, y, i)
+                beta = np.clip(beta, -0.1, 0.1)
+                layer.bias[batch] += beta[batch]
+
+    def fit(self, X, y, v=False, p=False, bias=True):
         """Adjust the weights of each layer to minimize error.
         Used in 'fit' method.
         Parameters
@@ -282,6 +329,8 @@ class Network():
         e = []
         for i in range(self.epochs):
             self.adj_weights(X, y)
+            if bias:
+                self.adj_biases(X,y)
             if v: 
                 print(self.error(X, y))
             if p:
@@ -310,8 +359,25 @@ class Network():
         """
         err = y - self.output(-1, X)
         if i == len(self) - 1:
-            return np.einsum('do, doi -> dio', err, self.w(X, i, i)).sum(axis=0)
+            return np.einsum('do, doi -> io', err, self.w(X, i, i))
         eta = np.einsum('do, doi -> di', err, self.d(X, len(self) - 1, i+1))
-        eta = np.einsum('di, dij -> dji', eta, self.w(X,i,i))
-        return eta.sum(axis=0)
+        eta = np.einsum('di, dij -> ji', eta, self.w(X,i,i))
+        return eta
     
+    def _beta(self, X, y, i=0):
+        """Calculate the gradient of the error with respect to biases at layer i.
+        Parameters
+        ---------- 
+        X: np.ndarray
+            Input array for layer 0
+        y: np.ndarray
+            Target output array
+        i: int
+            Index of the chosen layer
+        Returns
+        --------
+        output: np.ndarray
+            Gradient of the current network error with respect to biases at layer i
+        """
+        err = y - self.output(-1, X)
+        return np.einsum('do, doi -> i', err, self.b(X, len(self) - 1, i))

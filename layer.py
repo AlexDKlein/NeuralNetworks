@@ -5,6 +5,7 @@ class BaseLayer():
         self.output_shape=output_shape
         self.learning_rate=learning_rate
         self.weights=None
+        self.bias=None
         if input_shape is None:
             self.input_shape=None
         else:
@@ -37,6 +38,7 @@ class BaseLayer():
         self.input_shape=dim
         lim = np.sqrt(6 / (self.input_shape + self.output_shape))
         self.weights=np.random.uniform(-lim, lim, (self.input_shape, self.output_shape))
+        self.bias=np.zeros((self.output_shape,))
 
     def activate(self, X):
         """
@@ -52,10 +54,9 @@ class BaseLayer():
         output: ndarray of shape (-1, output_shape)
             Output arrays of the current layer.
         """
-        X = self.standardize(X)
-        weighted_X = np.einsum('di, io -> doi', X, self.weights)
+        weighted_X = X @ self.weights + self.bias
         activated = self._activate(weighted_X)
-        return activated.sum(axis=-1)
+        return activated
     
     def deriv(self, X):
         """
@@ -71,8 +72,7 @@ class BaseLayer():
         output: ndarray of shape (-1, output_shape, input_shape)
             Derivative of `activate` function for each input array in X.
         """
-        X = self.standardize(X)
-        weighted_X = np.einsum('di, io -> doi', X, self.weights)
+        weighted_X = np.einsum('di, io -> doi', X, self.weights) + self.bias[..., None]
         d = self._deriv(weighted_X)
         return np.einsum('doi, io -> doi', d, self.weights)
     
@@ -91,10 +91,27 @@ class BaseLayer():
         output: ndarray of shape (-1, output_shape, input_shape)
             Derivative of `activate` function wrt layer weights for each input array in X.
         """
-        X = self.standardize(X)
-        weighted_X = np.einsum('di, io -> doi', X, self.weights)
+        weighted_X = np.einsum('di, io -> doi', X, self.weights) + self.bias[..., None]
         d = self._deriv(weighted_X)
         return np.einsum('doi, di -> doi', d, X)
+    
+    def bias_deriv(self, X):
+        """
+        Get the derivative of `activate` function with respect to layer bias
+        for input arrays in X.
+        
+        Parameters
+        ----------
+        X: ndarray of shape (-1, input_shape)
+            Input arrays for the current layer.
+
+        Returns
+        ---------
+        output: ndarray of shape (-1, output_shape)
+            Derivative of `activate` function wrt layer bias for each input array in X.
+        """
+        weighted_X = X @ self.weights + self.bias
+        return self._deriv(weighted_X)
 
     def copy(self):
         """
@@ -112,6 +129,7 @@ class BaseLayer():
                                     output_shape=self.output_shape, 
                                     learning_rate=self.learning_rate)
         copy_layer.weights = self.weights.copy()
+        copy_layer.bias = self.bias.copy()
         return copy_layer
 
     def _activate(self, *args):
@@ -144,6 +162,7 @@ class ReLU(BaseLayer):
         self.output_shape=output_shape
         self.learning_rate=learning_rate
         self.weights=None
+        self.bias=None
         if input_shape is None:
             self.input_shape=None
         else:
