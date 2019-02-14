@@ -2,12 +2,12 @@ import numpy as np
 
 class BaseLayer():
     def __init__(self, output_shape=10, input_shape=None, learning_rate=1e-3):
-        self.output_shape=output_shape
-        self.learning_rate=learning_rate
-        self.weights=None
-        self.bias=None
+        self.output_shape = output_shape
+        self.learning_rate = learning_rate
+        self.weights = None
+        self.bias = None
         if input_shape is None:
-            self.input_shape=None
+            self.input_shape = None
         else:
             self._construct(input_shape) 
         
@@ -35,10 +35,10 @@ class BaseLayer():
         dim: int
             New input_shape for layer.
         """
-        self.input_shape=dim
+        self.input_shape = dim
         lim = np.sqrt(6 / (self.input_shape + self.output_shape))
-        self.weights=np.random.uniform(-lim, lim, (self.input_shape, self.output_shape))
-        self.bias=np.zeros((self.output_shape,))
+        self.weights = np.random.uniform(-lim, lim, (self.input_shape, self.output_shape))
+        self.bias = np.zeros((self.output_shape,))
 
     def activate(self, X):
         """
@@ -159,12 +159,12 @@ class ReLU(BaseLayer):
     activation='ReLU'
     def __init__(self, output_shape=10, input_shape=None, learning_rate=1e-3, alpha=0):
         self.alpha = alpha
-        self.output_shape=output_shape
-        self.learning_rate=learning_rate
-        self.weights=None
-        self.bias=None
+        self.output_shape = output_shape
+        self.learning_rate = learning_rate
+        self.weights = None
+        self.bias = None
         if input_shape is None:
-            self.input_shape=None
+            self.input_shape = None
         else:
             self._construct(input_shape) 
 
@@ -205,10 +205,10 @@ class Sine(BaseLayer):
 
 class Sinc(BaseLayer):
     def _activate(self, X):
-        return np.where(X==0, 1, np.sin(X)/X)
+        return np.where(X == 0, 1, np.sin(X) / X)
 
     def _deriv(self, X):
-        return np.where(X==0, 1, (np.cos(X) / X - np.sin(X) / X**2))
+        return np.where(X == 0, 1, (np.cos(X) / X - np.sin(X) / X**2))
 
 class Gaussian(BaseLayer):
     def _activate(self, X):
