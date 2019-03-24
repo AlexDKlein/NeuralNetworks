@@ -38,7 +38,6 @@ class NN():
             self.layers.append(layer)
             
     def _back_propogate(self, X, y):
-        dim = X.shape[0]
         for _ in range(self.epochs):
             for layer in self.layers:
                 w,b = layer.weights, layer.bias
@@ -50,13 +49,17 @@ class NN():
             adj = tf.clip_by_value(
                 self._neg_grad(X, y, var), -1, 1
             )
-            tf.assign_add(var, self.learning_rate * adj) 
+            for idx in batch:
+                delta = self.learning_rate * adj[idx]
+                tf.assign(var[idx], var[idx] + delta) 
             
     def _get_batches(self, n):
-        batches = np.random.choice(n, size=n, replace=False)
-        for i in range(0, n, self.batch_size):
-            yield np.isin(batches, batches[i:i+self.batch_size])
-            
+        n = int(n)
+        batches = np.arange(n)
+        np.random.shuffle(batches)
+        for i in range(n//self.batch_size):
+            yield batches[i::self.batch_size]
+    
     def _neg_grad(self, X, y, var):
         with tf.GradientTape() as g:
             g.watch(var)
